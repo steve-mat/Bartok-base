@@ -34,14 +34,14 @@ public class Utils : MonoBehaviour {
 		// Create an empty Bounds b
 		Bounds b = new Bounds(Vector3.zero, Vector3.zero);
 		// If this GameObject has a Renderer Component...
-		if (go.renderer != null) {
+		if (go.GetComponent<Renderer>() != null) {
 			// Expand b to contain the Renderer's Bounds
-			b = BoundsUnion(b, go.renderer.bounds);
+			b = BoundsUnion(b, go.GetComponent<Renderer>().bounds);
 		}
 		// If this GameObject has a Collider Component...
-		if (go.collider != null) {
+		if (go.GetComponent<Collider>() != null) {
 			// Expand b to contain the Collider's Bounds
-			b = BoundsUnion(b, go.collider.bounds);
+			b = BoundsUnion(b, go.GetComponent<Collider>().bounds);
 		}
 		// Iterate through each child of this gameObject.transform
 		foreach( Transform t in go.transform ) {
@@ -222,8 +222,8 @@ public class Utils : MonoBehaviour {
 	// Returns a list of all Materials in this GameObject or its children
 	static public Material[] GetAllMaterials( GameObject go ) {
 		List<Material> mats = new List<Material>();
-		if (go.renderer != null) {
-			mats.Add(go.renderer.material);
+		if (go.GetComponent<Renderer>() != null) {
+			mats.Add(go.GetComponent<Renderer>().material);
 		}
 		foreach( Transform t in go.transform ) {
 			mats.AddRange( GetAllMaterials( t.gameObject ) );
@@ -327,11 +327,34 @@ public class Utils : MonoBehaviour {
 		return( Bezier( u, new List<float>(vecs) ) );
 	}
 
+    // The same two functions for Quaternion
+    static public Quaternion Bezier(float u, List<Quaternion> vList) {
+        // If there is only one element in vList, return it
+        if(vList.Count == 1) {
+            return (vList[0]);
+        }
+        // Otherwise, create vListR, which is all but the 0th element of vList
+        // e.g. if vList = [0,1,2,3,4] then vListR = [1,2,3,4]
+        List<Quaternion> vListR = vList.GetRange(1, vList.Count - 1);
+        // And create vListL, which is all but the last element of vList
+        // e.g. if vList = [0,1,2,3,4] then vListL = [0,1,2,3]
+        List<Quaternion> vListL = vList.GetRange(0, vList.Count - 1);
+        // The result is the Slerp of these two shorter Lists
+        // It's possible that Quaternion.Slerp may clamp u to [0..1] :(
+        Quaternion res = Quaternion.Slerp(Bezier(u, vListL), Bezier(u, vListR), u);
+        return (res);
+    }
 
-	
-	//============================ Trace & Logging Functions ============================
+    // This version allows an Array or a series of Quaternions as input
+    static public Quaternion Bezier(float u, params Quaternion[] vecs) {
+        return (Bezier(u, new List<Quaternion>(vecs)));
+    }
 
-	static public void tr(params object[] objs) {
+
+
+    //============================ Trace & Logging Functions ============================
+
+    static public void tr(params object[] objs) {
 		string s = objs[0].ToString();
 		for (int i=1; i<objs.Length; i++) {
 			s += "\t"+objs[i].ToString();
